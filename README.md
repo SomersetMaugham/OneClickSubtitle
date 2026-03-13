@@ -1,6 +1,8 @@
 # YouTube 한글 자막 변환 (YouTube Korean Subtitle)
 
 클릭 한 번으로 유튜브 동영상의 자막을 한국어(자동 번역)로 변환해주는 크롬 확장 프로그램입니다. 유튜브의 기본 자동 번역 기능을 활용하여, 여러 번 클릭해야 하는 번거로운 과정을 단일 버튼 클릭으로 자동화합니다.
+<img width="1372" height="775" alt="OneClickSub" src="https://github.com/user-attachments/assets/a63a792e-5347-4e73-847d-60cb02e57f32" />
+
 
 ## ✨ 주요 기능
 
@@ -38,3 +40,4 @@
 ## 📝 라이선스
 
 이 프로젝트는 MIT 라이선스 하에 배포됩니다. 자세한 내용은 LICENSE 파일을 참고하세요.
+
