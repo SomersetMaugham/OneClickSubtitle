@@ -281,42 +281,6 @@
 
 
 
-    // 패널 숨김 상태 관리 - 각 팝업 레이어별로 작업
-
-    const HIDDEN_CLASS = 'ytp-korean-subtitle-hidden';
-
-    function hideAllPanels() {
-
-      const panels = document.querySelectorAll('.ytp-popup' + ', .ytp-settings-menu');
-
-      for (const panel of panels) {
-
-        if (panel.querySelectorAll('.ytp-menuitem').length > 0) {
-
-          panel.classList.add(HIDDEN_CLASS);
-
-        }
-
-      }
-
-    }
-
-
-
-    function showAllPanels() {
-
-      const panels = document.querySelectorAll('.' + HIDDEN_CLASS);
-
-      for (const panel of panels) {
-
-        panel.classList.remove(HIDDEN_CLASS);
-
-      }
-
-    }
-
-
-
     function findSettingsPanel() {
 
       // 먼저 현재 보이는 설정 팝업 찾기
@@ -357,9 +321,9 @@
 
 
 
-    try {
+        try {
 
-      // 1. 설정 버튼 찾기 및 클릭
+      // 1. 설정 버튼 클릭 및 패널 대기
 
       const settingsButton = document.querySelector('.ytp-settings-button');
 
@@ -373,15 +337,21 @@
 
       settingsButton.click();
 
-      await delay(200);
+      await delay(400);
+
+      let panel = findSettingsPanel();
+
+      while (!panel) {
+
+        await delay(100);
+
+        panel = findSettingsPanel();
+
+      }
 
 
 
-      // 2. 자막 메뉴가 있을 때까지 대기 후 클릭
-
-      let panel = await waitForPanel(6000);
-
-      hideAllPanels();
+      // 2. 자막 메뉴 클릭
 
       const subtitleClicked = clickMenuItem(panel, ['자막', 'Subtitles', 'CC', '字幕']);
 
@@ -389,17 +359,7 @@
 
       if (!subtitleClicked) {
 
-        showAllPanels();
-
         settingsButton.click();
-
-        showToast('이 동영상은 자막을 지원하지 않습니다');
-
-        if (button) {
-
-          button.classList.remove('loading');
-
-        }
 
         return;
 
@@ -408,10 +368,6 @@
 
 
       await delay(400);
-
-
-
-      // 3. 서브 메뉴에서 자동 번역 존재 여부 확인 또는 영어 자막 선택
 
       panel = findSettingsPanel();
 
@@ -423,11 +379,11 @@
 
       }
 
-      hideAllPanels();
-
       const menuItems = panel.querySelectorAll('.ytp-menuitem');
 
 
+
+      // 3. 자동 번역 존재 여부 확인
 
       let autoTranslateExists = false;
 
@@ -531,13 +487,11 @@
 
       if (!autoTranslateClicked) {
 
-        // 이미 한국어 자막이 있는지 확인
+        // 이미 한국어 자막이 있는지 확인 (자동 번역이 없으면 한국어 옵션만 있을 수 있음)
 
         const koreanClicked = clickMenuItem(panel, ['한국어', 'Korean', '韓国語']);
 
         if (koreanClicked) {
-
-          showAllPanels();
 
           showToast('✓ 한국어 자막이 활성화되었습니다');
 
@@ -552,8 +506,6 @@
           return;
 
         }
-
-        showAllPanels();
 
         settingsButton.click();
 
@@ -579,8 +531,6 @@
 
       }
 
-      hideAllPanels();
-
       const koreanClicked = clickMenuItem(panel, ['한국어', 'Korean', '韓国語']);
 
 
@@ -595,8 +545,6 @@
 
 
 
-      showAllPanels(); // 완료 후 패널 복원 (자동으로 닫힘)
-
       showToast('✓ 한국어 자막이 활성화되었습니다');
 
 
@@ -609,11 +557,8 @@
 
       }
 
-
-
-    } catch (error) {
-
-      showAllPanels(); // 에러 시 패널 복원
+    }
+} catch (error) {
 
 
 
@@ -656,6 +601,224 @@
     }
 
   }
+
+
+
+  /**
+
+   * 버튼 생성 및 삽입
+
+   */
+
+  function createButton() {
+
+    // 이미 버튼이 있으면 생성하지 않음
+
+    if (document.getElementById(BUTTON_ID)) {
+
+      return;
+
+    }
+
+
+
+    // YouTube 플레이어 우측 컨트롤 영역 찾기
+
+    const rightControls = document.querySelector('.ytp-right-controls');
+
+    if (!rightControls) {
+
+      return;
+
+    }
+
+
+
+    // 버튼 생성
+
+    const button = document.createElement('button');
+
+    button.id = BUTTON_ID;
+
+    button.className = 'ytp-button ytp-korean-subtitle-button';
+
+    button.innerHTML = `
+
+      ${BUTTON_SVG}
+
+      <span class="tooltip">한글 자막</span>
+
+    `;
+
+    button.setAttribute('aria-label', '한글 자막 변환');
+
+    button.setAttribute('title', '');
+
+
+
+    // 클릭 이벤트
+
+    button.addEventListener('click', (e) => {
+
+      e.preventDefault();
+
+      e.stopPropagation();
+
+      enableKoreanSubtitle();
+
+    });
+
+
+
+    // 자막 버튼 앞에 삽입 (또는 맨 앞에)
+
+    const subtitleButton = rightControls.querySelector('.ytp-subtitles-button');
+
+    if (subtitleButton && subtitleButton.parentNode === rightControls) {
+
+      rightControls.insertBefore(button, subtitleButton);
+
+    } else {
+
+      // 안전하게 맨 앞에 삽입
+
+      rightControls.prepend(button);
+
+    }
+
+
+
+    console.log('[한글 자막] 버튼이 추가되었습니다');
+
+  }
+
+
+
+  /**
+
+   * YouTube SPA 네비게이션 감지 및 버튼 재삽입
+
+   */
+
+  function observePageChanges() {
+
+    // 플레이어 영역 감시
+
+    const observer = new MutationObserver((mutations) => {
+
+      // 동영상 페이지인 경우에만 버튼 생성 시도
+
+      if (window.location.pathname === '/watch') {
+
+        createButton();
+
+      }
+
+    });
+
+
+
+    observer.observe(document.body, {
+
+      childList: true,
+
+      subtree: true
+
+    });
+
+
+
+    // YouTube의 yt-navigate-finish 이벤트 감지
+
+    window.addEventListener('yt-navigate-finish', () => {
+
+      // 동영상 전환 시 버튼 active 상태 초기화
+
+      const button = document.getElementById(BUTTON_ID);
+
+      if (button) {
+
+        button.classList.remove('active');
+
+      }
+
+
+
+      if (window.location.pathname === '/watch') {
+
+        // 약간의 지연 후 버튼 생성 (플레이어 로드 대기)
+
+        setTimeout(createButton, 500);
+
+      }
+
+    });
+
+  }
+
+
+
+  /**
+
+   * 초기화
+
+   */
+
+  function init() {
+
+    // 동영상 페이지인 경우 버튼 생성
+
+    if (window.location.pathname === '/watch') {
+
+      // 플레이어가 로드될 때까지 대기
+
+      const checkPlayer = setInterval(() => {
+
+        if (document.querySelector('.ytp-right-controls')) {
+
+          clearInterval(checkPlayer);
+
+          createButton();
+
+        }
+
+      }, 500);
+
+
+
+      // 10초 후 중단
+
+      setTimeout(() => clearInterval(checkPlayer), 10000);
+
+    }
+
+
+
+    // 페이지 변경 감지 시작
+
+    observePageChanges();
+
+  }
+
+
+
+  // DOM 준비 후 초기화
+
+  if (document.readyState === 'loading') {
+
+    document.addEventListener('DOMContentLoaded', init);
+
+  } else {
+
+    init();
+
+  }
+
+
+
+})();
+
+
 
 
 
