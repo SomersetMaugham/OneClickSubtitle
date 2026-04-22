@@ -9,17 +9,15 @@
   var BUTTON_ID = 'ytp-subtitle-btn';
 
   var i18n = window.i18n || {};
-  var LANGUAGE_MAP = i18n.LANGUAGE_MAP || {};
   var MENU_TEXTS = i18n.MENU_TEXTS || {};
   var detectSystemLanguage = i18n.detectSystemLanguage || function () { return 'ko'; };
-  var getTargetLanguageNames = i18n.getTargetLanguageNames || function () { return ['Korean', '한국어']; };
-  var getLanguageName = i18n.getLanguageName || function () { return 'Korean'; };
-  var getButtonChar = i18n.getButtonChar || function () { return 'A'; };
+  var getTargetLanguageNames = i18n.getTargetLanguageNames || function (code) { return [code, code.toUpperCase()]; };
+  var getLanguageName = i18n.getLanguageName || function (code) { return code.charAt(0).toUpperCase() + code.slice(1); };
   var isRTL = i18n.isRTL || function () { return false; };
   var getToastMessageForLanguage = i18n.getToastMessageForLanguage || function () { return ''; };
 
   var targetLang = 'ko';
-  var targetLangNames = ['Korean', '한국어'];
+  var targetLangNames = ['Korean', 'KO'];
   var targetLangName = 'Korean';
 
   function getButtonSVG(char) {
