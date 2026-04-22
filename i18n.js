@@ -33,9 +33,7 @@
 
   var TOAST_MESSAGES = {
     activated: '✓ {lang} subtitles activated',
-    activatedNative: '✓ {nativeName} 자막이 활성화되었습니다',
     deactivated: '✓ Subtitles turned off',
-    deactivatedNative: '✓ 자막이 비활성화되었습니다',
     error: '⚠ {error}',
     retry: 'Retrying...',
     noCaptions: '⚠ No captions available',
@@ -69,7 +67,7 @@
   }
 
   function getButtonChar(langCode) {
-    return BUTTON_CHARS[langCode] || 'A';
+    return '가';
   }
 
   function isRTL(langCode) {
@@ -90,22 +88,6 @@
   }
 
   function getToastMessageForLanguage(langCode, key, replacements) {
-    var lang = LANGUAGE_MAP[langCode];
-    var isKorean = langCode === 'ko';
-
-    if (isKorean) {
-      if (key === 'activated') {
-        return getToastMessage('activatedNative', replacements);
-      } else if (key === 'deactivated') {
-        return getToastMessage('deactivatedNative');
-      }
-    }
-
-    var msgKey = key + 'Native';
-    if (TOAST_MESSAGES[msgKey] && isKorean) {
-      return getToastMessage(msgKey, replacements);
-    }
-
     return getToastMessage(key, replacements);
   }
 

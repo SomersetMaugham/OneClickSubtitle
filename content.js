@@ -285,13 +285,10 @@
     }
 
     var tooltipText = targetLangNames[0] + ' subtitles';
-    if (targetLang === 'ko') {
-      tooltipText = targetLangNames[1] + ' 자막';
-    }
 
-    button.innerHTML = getButtonSVG(getButtonChar(targetLang)) +
+    button.innerHTML = getButtonSVG('가') +
       '<span class="tooltip">' + tooltipText + '</span>';
-    button.setAttribute('aria-label', tooltipText);
+    button.setAttribute('aria-label', 'Translate subtitles to ' + targetLangNames[0]);
     button.setAttribute('title', '');
 
     button.addEventListener('click', function (e) {
