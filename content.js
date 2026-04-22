@@ -497,7 +497,7 @@
 
             settingsButton.click();
 
-            throw new Error('사용 가능한 자막이 없습니다');
+            return;
 
           }
 
