@@ -6,154 +6,83 @@
 (function () {
   'use strict';
 
-  const BUTTON_ID = 'ytp-subtitle-btn';
-  const i18n = window.i18n || {};
+  var BUTTON_ID = 'ytp-subtitle-btn';
 
-  const LANGUAGE_MAP = i18n.LANGUAGE_MAP || {
-    ko: { target: ['Korean', '한국어'], code: 'ko' },
-    ja: { target: ['Japanese', '日本語'], code: 'ja' },
-    es: { target: ['Spanish', 'Español'], code: 'es' },
-    fr: { target: ['French', 'Français'], code: 'fr' },
-    de: { target: ['German', 'Deutsch'], code: 'de' },
-    pt: { target: ['Portuguese', 'Português'], code: 'pt' },
-    ru: { target: ['Russian', 'Русский'], code: 'ru' },
-    zh: { target: ['Chinese', '中文'], code: 'zh-CN' },
-    it: { target: ['Italian', 'Italiano'], code: 'it' },
-    nl: { target: ['Dutch', 'Nederlands'], code: 'nl' },
-    hi: { target: ['Hindi', 'हिन्दी'], code: 'hi' },
-    ar: { target: ['Arabic', 'العربية'], code: 'ar', rtl: true },
-    id: { target: ['Indonesian', 'Bahasa Indonesia'], code: 'id' },
-    tl: { target: ['Filipino', 'Filipino'], code: 'tl' },
-    ur: { target: ['Urdu', 'اردو'], code: 'ur', rtl: true },
-    fa: { target: ['Persian', 'فارسی'], code: 'fa', rtl: true }
-  };
+  var i18n = window.i18n || {};
+  var LANGUAGE_MAP = i18n.LANGUAGE_MAP || {};
+  var MENU_TEXTS = i18n.MENU_TEXTS || {};
+  var detectSystemLanguage = i18n.detectSystemLanguage || function () { return 'ko'; };
+  var getTargetLanguageNames = i18n.getTargetLanguageNames || function () { return ['Korean', '한국어']; };
+  var getLanguageName = i18n.getLanguageName || function () { return 'Korean'; };
+  var getButtonChar = i18n.getButtonChar || function () { return 'A'; };
+  var isRTL = i18n.isRTL || function () { return false; };
+  var getToastMessageForLanguage = i18n.getToastMessageForLanguage || function () { return ''; };
 
-  const MENU_TEXTS = i18n.MENU_TEXTS || {
-    subtitles: ['Subtitles', 'CC', 'Captions', '字幕', '자막'],
-    autoTranslate: ['Auto-translate', '自動翻訳', '자동 번역'],
-    english: ['English (auto-generated)', 'English', '英語', '영어'],
-    off: ['Off', '끄기', '사용 안함']
-  };
-
-  let targetLang = 'ko';
-  let targetLangNames = ['Korean', '한국어'];
+  var targetLang = 'ko';
+  var targetLangNames = ['Korean', '한국어'];
+  var targetLangName = 'Korean';
 
   function getButtonSVG(char) {
-    return `
-      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V6h16v12z"/>
-        <text x="12" y="15" text-anchor="middle" font-size="8" font-weight="bold" fill="currentColor" font-family="sans-serif">${char}</text>
-      </svg>
-    `;
-  }
-
-  function getFirstChar(langCode) {
-    const chars = {
-      ko: '가', ja: 'あ', es: 'A', fr: 'A', de: 'A',
-      pt: 'A', ru: 'А', zh: '中', it: 'A', nl: 'A',
-      hi: 'ह', ar: 'ع', id: 'A', tl: 'A', ur: 'ا', fa: 'ف'
-    };
-    return chars[langCode] || 'A';
+    return '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">' +
+      '<path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V6h16v12z"/>' +
+      '<text x="12" y="15" text-anchor="middle" font-size="8" font-weight="bold" fill="currentColor" font-family="sans-serif">' + char + '</text>' +
+      '</svg>';
   }
 
   function showToast(message) {
-    const existingToast = document.querySelector('.ytp-subtitle-toast');
+    var existingToast = document.querySelector('.ytp-subtitle-toast');
     if (existingToast) {
       existingToast.remove();
     }
 
-    const toast = document.createElement('div');
+    var toast = document.createElement('div');
     toast.className = 'ytp-subtitle-toast';
+    if (isRTL(targetLang)) {
+      toast.classList.add('rtl');
+    }
     toast.textContent = message;
 
     document.body.appendChild(toast);
 
-    setTimeout(() => toast.remove(), 2000);
+    setTimeout(function () {
+      if (toast.parentNode) {
+        toast.remove();
+      }
+    }, 2000);
   }
 
   function clickMenuItem(panel, texts) {
-    const menuItems = panel.querySelectorAll('.ytp-menuitem');
+    var menuItems = panel.querySelectorAll('.ytp-menuitem');
+    var clicked = false;
 
-    for (const item of menuItems) {
-      const label = item.querySelector('.ytp-menuitem-label');
+    for (var i = 0; i < menuItems.length; i++) {
+      var item = menuItems[i];
+      var label = item.querySelector('.ytp-menuitem-label');
       if (label) {
-        const labelText = label.textContent.trim();
-        if (texts.some(text => labelText.includes(text))) {
-          item.click();
-          return true;
+        var labelText = label.textContent.trim();
+        for (var j = 0; j < texts.length; j++) {
+          if (labelText.indexOf(texts[j]) !== -1) {
+            item.click();
+            clicked = true;
+            break;
+          }
+        }
+        if (clicked) {
+          break;
         }
       }
     }
-    return false;
-  }
-
-  function waitForPanel(timeout = 8000) {
-    return new Promise((resolve, reject) => {
-      const startTime = Date.now();
-
-      const check = () => {
-        let panel = document.querySelector('.ytp-settings-menu');
-        if (!panel) {
-          panel = document.querySelector('.ytp-popup.ytp-menu-content');
-        }
-        if (!panel) {
-          const popups = document.querySelectorAll('.ytp-popup');
-          for (const popup of popups) {
-            if (popup.querySelectorAll('.ytp-menuitem').length > 0) {
-              panel = popup;
-              break;
-            }
-          }
-        }
-
-        if (panel && panel.querySelectorAll('.ytp-menuitem').length > 0) {
-          const style = getComputedStyle(panel);
-          const isVisible = style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0';
-
-          if (isVisible) {
-            resolve(panel);
-          } else if (Date.now() - startTime > timeout) {
-            reject(new Error('Panel timeout'));
-          } else {
-            setTimeout(check, 50);
-          }
-        } else if (Date.now() - startTime > timeout) {
-          reject(new Error('Panel timeout'));
-        } else {
-          setTimeout(check, 50);
-        }
-      };
-
-      check();
-    });
-  }
-
-  function waitForPanelClose(timeout = 1000) {
-    return new Promise((resolve) => {
-      const startTime = Date.now();
-
-      const check = () => {
-        const panel = document.querySelector('.ytp-settings-menu');
-
-        if (!panel || panel.style.display === 'none') {
-          resolve();
-        } else if (Date.now() - startTime > timeout) {
-          resolve();
-        } else {
-          setTimeout(check, 50);
-        }
-      };
-
-      check();
-    });
+    return clicked;
   }
 
   function delay(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise(function (resolve) {
+      setTimeout(resolve, ms);
+    });
   }
 
   function findSettingsPanel() {
-    let panel = document.querySelector('.ytp-popup.ytp-menu-content');
+    var panel = document.querySelector('.ytp-popup.ytp-menu-content');
 
     if (panel && panel.querySelectorAll('.ytp-menuitem').length > 0) {
       return panel;
@@ -165,31 +94,53 @@
       return panel;
     }
 
-    const popups = document.querySelectorAll('.ytp-popup');
+    var popups = document.querySelectorAll('.ytp-popup');
 
-    for (const popup of popups) {
-      if (popup.querySelectorAll('.ytp-menuitem').length > 0) {
-        return popup;
+    for (var i = 0; i < popups.length; i++) {
+      if (popups[i].querySelectorAll('.ytp-menuitem').length > 0) {
+        return popups[i];
       }
     }
 
     return null;
   }
 
-  async function enableSubtitle(retryCount = 0) {
-    const button = document.getElementById(BUTTON_ID);
+  function hasAutoTranslate(panel) {
+    var menuItems = panel.querySelectorAll('.ytp-menuitem');
+    for (var i = 0; i < menuItems.length; i++) {
+      var label = menuItems[i].querySelector('.ytp-menuitem-label');
+      if (label) {
+        var text = label.textContent;
+        for (var j = 0; j < MENU_TEXTS.autoTranslate.length; j++) {
+          if (text.indexOf(MENU_TEXTS.autoTranslate[j]) !== -1) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+  function isOffOption(text) {
+    for (var i = 0; i < MENU_TEXTS.off.length; i++) {
+      if (text.indexOf(MENU_TEXTS.off[i]) !== -1) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  async function enableSubtitle(retryCount) {
+    retryCount = retryCount || 0;
+    var button = document.getElementById(BUTTON_ID);
 
     if (button && button.classList.contains('active')) {
-      const subtitleButton = document.querySelector('.ytp-subtitles-button');
-
+      var subtitleButton = document.querySelector('.ytp-subtitles-button');
       if (subtitleButton) {
         subtitleButton.click();
       }
-
       button.classList.remove('active');
-
-      showToast('✓ 자막이 비활성화되었습니다');
-
+      showToast(getToastMessageForLanguage(targetLang, 'deactivated'));
       return;
     }
 
@@ -198,71 +149,47 @@
     }
 
     try {
-      const settingsButton = document.querySelector('.ytp-settings-button');
-
+      var settingsButton = document.querySelector('.ytp-settings-button');
       if (!settingsButton) {
-        throw new Error('설정 버튼을 찾을 수 없습니다');
+        throw new Error(i18n.getToastMessage('settingsNotFound') || 'Settings button not found');
       }
 
       settingsButton.click();
       await delay(400);
 
-      let panel = findSettingsPanel();
-
+      var panel = findSettingsPanel();
       while (!panel) {
         await delay(100);
         panel = findSettingsPanel();
       }
 
-      const subtitleClicked = clickMenuItem(panel, MENU_TEXTS.subtitles);
-
-      if (!subtitleClicked) {
+      if (!clickMenuItem(panel, MENU_TEXTS.subtitles)) {
         settingsButton.click();
         return;
       }
 
       await delay(400);
-
       panel = findSettingsPanel();
-
       while (!panel) {
         await delay(100);
         panel = findSettingsPanel();
       }
 
-      const menuItems = panel.querySelectorAll('.ytp-menuitem');
-
-      let autoTranslateExists = false;
-
-      for (const item of menuItems) {
-        const label = item.querySelector('.ytp-menuitem-label');
-
-        if (label && MENU_TEXTS.autoTranslate.some(text => label.textContent.includes(text))) {
-          autoTranslateExists = true;
-          break;
-        }
-      }
+      var menuItems = panel.querySelectorAll('.ytp-menuitem');
+      var autoTranslateExists = hasAutoTranslate(panel);
 
       if (!autoTranslateExists) {
-        const englishClicked = clickMenuItem(panel, MENU_TEXTS.english);
-
+        var englishClicked = clickMenuItem(panel, MENU_TEXTS.english);
         if (!englishClicked) {
-          let anyClicked = false;
-
-          for (const item of menuItems) {
-            const label = item.querySelector('.ytp-menuitem-label');
-
-            if (label) {
-              const text = label.textContent.trim();
-
-              if (!MENU_TEXTS.off.some(off => text.includes(off))) {
-                item.click();
-                anyClicked = true;
-                break;
-              }
+          var anyClicked = false;
+          for (var i = 0; i < menuItems.length; i++) {
+            var label = menuItems[i].querySelector('.ytp-menuitem-label');
+            if (label && !isOffOption(label.textContent.trim())) {
+              menuItems[i].click();
+              anyClicked = true;
+              break;
             }
           }
-
           if (!anyClicked) {
             settingsButton.click();
             return;
@@ -270,52 +197,42 @@
         }
 
         await delay(600);
-
         panel = findSettingsPanel();
-
         while (!panel) {
           await delay(100);
           panel = findSettingsPanel();
         }
       }
 
-      const autoTranslateClicked = clickMenuItem(panel, MENU_TEXTS.autoTranslate);
-
+      var autoTranslateClicked = clickMenuItem(panel, MENU_TEXTS.autoTranslate);
       if (!autoTranslateClicked) {
-        const targetClicked = clickMenuItem(panel, targetLangNames);
-
+        var targetClicked = clickMenuItem(panel, targetLangNames);
         if (targetClicked) {
-          showToast(`✓ ${targetLangNames[0]} 자막이 활성화되었습니다`);
-
+          showToast(getToastMessageForLanguage(targetLang, 'activated', { lang: targetLangName, nativeName: targetLangNames[1] }));
           if (button) {
             button.classList.remove('loading');
             button.classList.add('active');
           }
-
           return;
         }
-
         settingsButton.click();
-        throw new Error('자동 번역을 사용할 수 없습니다');
+        throw new Error('Auto-translate not available');
       }
 
       await delay(400);
-
       panel = findSettingsPanel();
-
       while (!panel) {
         await delay(100);
         panel = findSettingsPanel();
       }
 
-      const targetClicked = clickMenuItem(panel, targetLangNames);
-
+      var targetClicked = clickMenuItem(panel, targetLangNames);
       if (!targetClicked) {
         settingsButton.click();
-        throw new Error(`${targetLangNames[0]}를 찾을 수 없습니다`);
+        throw new Error(targetLangName + ' not found');
       }
 
-      showToast(`✓ ${targetLangNames[0]} 자막이 활성화되었습니다`);
+      showToast(getToastMessageForLanguage(targetLang, 'activated', { lang: targetLangName, nativeName: targetLangNames[1] }));
 
       if (button) {
         button.classList.remove('loading');
@@ -324,21 +241,17 @@
 
     } catch (error) {
       if (retryCount === 0) {
-        console.log('[자막] 첫 번째 시도 실패, 자동 재시도...');
-
-        const settingsButton = document.querySelector('.ytp-settings-button');
-
+        console.log('[Subtitle] First attempt failed, retrying...');
+        var settingsButton = document.querySelector('.ytp-settings-button');
         if (settingsButton) {
           settingsButton.click();
         }
-
         await delay(500);
-
         return enableSubtitle(1);
       }
 
-      console.error('[자막]', error.message);
-      showToast('⚠ ' + error.message);
+      console.error('[Subtitle]', error.message);
+      showToast(getToastMessageForLanguage(targetLang, 'error', { error: error.message }));
 
       if (button) {
         button.classList.remove('loading');
@@ -346,46 +259,59 @@
     }
   }
 
+  function updateTargetLanguage() {
+    targetLang = detectSystemLanguage();
+    targetLangNames = getTargetLanguageNames(targetLang);
+    targetLangName = getLanguageName(targetLang);
+  }
+
   function createButton() {
     if (document.getElementById(BUTTON_ID)) {
       return;
     }
 
-    const rightControls = document.querySelector('.ytp-right-controls');
-
+    var rightControls = document.querySelector('.ytp-right-controls');
     if (!rightControls) {
       return;
     }
 
-    const button = document.createElement('button');
+    updateTargetLanguage();
+
+    var button = document.createElement('button');
     button.id = BUTTON_ID;
     button.className = 'ytp-button ytp-subtitle-button';
-    button.innerHTML = `
-      ${getButtonSVG(getFirstChar(targetLang))}
-      <span class="tooltip">${targetLangNames[0]} 자막</span>
-    `;
-    button.setAttribute('aria-label', `${targetLangNames[0]} 자막 변환`);
+    if (isRTL(targetLang)) {
+      button.classList.add('rtl');
+    }
+
+    var tooltipText = targetLangNames[0] + ' subtitles';
+    if (targetLang === 'ko') {
+      tooltipText = targetLangNames[1] + ' 자막';
+    }
+
+    button.innerHTML = getButtonSVG(getButtonChar(targetLang)) +
+      '<span class="tooltip">' + tooltipText + '</span>';
+    button.setAttribute('aria-label', tooltipText);
     button.setAttribute('title', '');
 
-    button.addEventListener('click', (e) => {
+    button.addEventListener('click', function (e) {
       e.preventDefault();
       e.stopPropagation();
       enableSubtitle();
     });
 
-    const subtitleButton = rightControls.querySelector('.ytp-subtitles-button');
-
+    var subtitleButton = rightControls.querySelector('.ytp-subtitles-button');
     if (subtitleButton && subtitleButton.parentNode === rightControls) {
       rightControls.insertBefore(button, subtitleButton);
     } else {
       rightControls.prepend(button);
     }
 
-    console.log('[자막] 버튼이 추가되었습니다');
+    console.log('[Subtitle] Button added for ' + targetLangName);
   }
 
   function observePageChanges() {
-    const observer = new MutationObserver((mutations) => {
+    var observer = new MutationObserver(function (mutations) {
       if (window.location.pathname === '/watch') {
         createButton();
       }
@@ -396,9 +322,8 @@
       subtree: true
     });
 
-    window.addEventListener('yt-navigate-finish', () => {
-      const button = document.getElementById(BUTTON_ID);
-
+    window.addEventListener('yt-navigate-finish', function () {
+      var button = document.getElementById(BUTTON_ID);
       if (button) {
         button.classList.remove('active');
       }
@@ -409,33 +334,47 @@
     });
   }
 
-  function detectSystemLanguage() {
-    const lang = navigator.language || navigator.userLanguage || 'ko';
-    const shortLang = lang.split('-')[0];
-
-    if (LANGUAGE_MAP[shortLang]) {
-      return shortLang;
-    }
-
-    return 'ko';
+  function observeLanguageChange() {
+    setInterval(function () {
+      var currentLang = detectSystemLanguage();
+      if (currentLang !== targetLang) {
+        var button = document.getElementById(BUTTON_ID);
+        if (button) {
+          button.classList.remove('active');
+        }
+        updateTargetLanguage();
+        if (window.location.pathname === '/watch') {
+          var rightControls = document.querySelector('.ytp-right-controls');
+          if (rightControls) {
+            var existingButton = document.getElementById(BUTTON_ID);
+            if (existingButton) {
+              existingButton.remove();
+            }
+            createButton();
+          }
+        }
+      }
+    }, 30000);
   }
 
   function init() {
-    targetLang = detectSystemLanguage();
-    targetLangNames = LANGUAGE_MAP[targetLang].target;
+    updateTargetLanguage();
 
     if (window.location.pathname === '/watch') {
-      const checkPlayer = setInterval(() => {
+      var checkPlayer = setInterval(function () {
         if (document.querySelector('.ytp-right-controls')) {
           clearInterval(checkPlayer);
           createButton();
         }
       }, 500);
 
-      setTimeout(() => clearInterval(checkPlayer), 10000);
+      setTimeout(function () {
+        clearInterval(checkPlayer);
+      }, 10000);
     }
 
     observePageChanges();
+    observeLanguageChange();
   }
 
   if (document.readyState === 'loading') {
