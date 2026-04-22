@@ -110,7 +110,7 @@
 
    */
 
-  function waitForPanel(timeout = 3000) {
+  function waitForPanel(timeout = 8000) {
 
     return new Promise((resolve, reject) => {
 
@@ -120,13 +120,42 @@
 
       const check = () => {
 
-        const panel = document.querySelector('.ytp-settings-menu');
+        // YouTube가 사용하는 여러 가능한 패널 선택자
+        let panel = document.querySelector('.ytp-settings-menu');
+        if (!panel) {
+          panel = document.querySelector('.ytp-popup.ytp-menu-content');
+        }
+        if (!panel) {
+          const popups = document.querySelectorAll('.ytp-popup');
+          for (const popup of popups) {
+            if (popup.querySelectorAll('.ytp-menuitem').length > 0) {
+              panel = popup;
+              break;
+            }
+          }
+        }
 
-        // 패널이 존재하고, 표시되어 있고, 메뉴 아이템이 있는지 확인
 
-        if (panel && panel.style.display !== 'none' && panel.querySelectorAll('.ytp-menuitem').length > 0) {
 
-          resolve(panel);
+        if (panel && panel.querySelectorAll('.ytp-menuitem').length > 0) {
+
+          // computed style로 가시성 체크 (YouTube는 CSS 클래스로 표시/숨김을 제어함)
+          const style = getComputedStyle(panel);
+          const isVisible = style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0';
+
+          if (isVisible) {
+
+            resolve(panel);
+
+          } else if (Date.now() - startTime > timeout) {
+
+            reject(new Error('Panel timeout'));
+
+          } else {
+
+            setTimeout(check, 50);
+
+          }
 
         } else if (Date.now() - startTime > timeout) {
 
@@ -252,25 +281,79 @@
 
 
 
-    // 패널 숨김 상태 관리
+    // 패널 숨김 상태 관리 - 각 팝업 레이어별로 작업
 
-    const hidePanel = () => {
+    const HIDDEN_CLASS = 'ytp-korean-subtitle-hidden';
 
-      const panel = document.querySelector('.ytp-settings-menu');
+    function hideAllPanels() {
 
-      if (panel) panel.classList.add('ytp-korean-subtitle-hidden');
+      const panels = document.querySelectorAll('.ytp-popup' + ', .ytp-settings-menu');
 
-    };
+      for (const panel of panels) {
+
+        if (panel.querySelectorAll('.ytp-menuitem').length > 0) {
+
+          panel.classList.add(HIDDEN_CLASS);
+
+        }
+
+      }
+
+    }
 
 
 
-    const showPanel = () => {
+    function showAllPanels() {
 
-      const panel = document.querySelector('.ytp-settings-menu');
+      const panels = document.querySelectorAll('.' + HIDDEN_CLASS);
 
-      if (panel) panel.classList.remove('ytp-korean-subtitle-hidden');
+      for (const panel of panels) {
 
-    };
+        panel.classList.remove(HIDDEN_CLASS);
+
+      }
+
+    }
+
+
+
+    function findSettingsPanel() {
+
+      // 먼저 현재 보이는 설정 팝업 찾기
+
+      let panel = document.querySelector('.ytp-popup.ytp-menu-content');
+
+      if (panel && panel.querySelectorAll('.ytp-menuitem').length > 0) {
+
+        return panel;
+
+      }
+
+      panel = document.querySelector('.ytp-settings-menu');
+
+      if (panel && panel.querySelectorAll('.ytp-menuitem').length > 0) {
+
+        return panel;
+
+      }
+
+      // 모든 팝업에서 메뉴 아이템이 있는 것 찾기
+
+      const popups = document.querySelectorAll('.ytp-popup');
+
+      for (const popup of popups) {
+
+        if (popup.querySelectorAll('.ytp-menuitem').length > 0) {
+
+          return popup;
+
+        }
+
+      }
+
+      return null;
+
+    }
 
 
 
@@ -290,19 +373,15 @@
 
       settingsButton.click();
 
-      await delay(100);
-
-      hidePanel(); // 패널 숨기기
-
       await delay(200);
 
 
 
-      // 2. 자막 메뉴 클릭
+      // 2. 자막 메뉴가 있을 때까지 대기 후 클릭
 
-      let panel = await waitForPanel();
+      let panel = await waitForPanel(6000);
 
-      hidePanel();
+      hideAllPanels();
 
       const subtitleClicked = clickMenuItem(panel, ['자막', 'Subtitles', 'CC', '字幕']);
 
@@ -310,7 +389,7 @@
 
       if (!subtitleClicked) {
 
-        showPanel();
+        showAllPanels();
 
         settingsButton.click();
 
@@ -328,21 +407,29 @@
 
 
 
-      await delay(300);
+      await delay(400);
 
 
 
-      // 3. 영어(자동 생성됨) 또는 다른 자막 선택 (자동 번역 메뉴를 활성화하기 위해)
+      // 3. 서브 메뉴에서 자동 번역 존재 여부 확인 또는 영어 자막 선택
 
-      panel = await waitForPanel();
+      panel = findSettingsPanel();
 
+      while (!panel) {
 
+        await delay(100);
 
-      // 먼저 자동 번역이 이미 있는지 확인
+        panel = findSettingsPanel();
 
-      let autoTranslateExists = false;
+      }
+
+      hideAllPanels();
 
       const menuItems = panel.querySelectorAll('.ytp-menuitem');
+
+
+
+      let autoTranslateExists = false;
 
       for (const item of menuItems) {
 
@@ -360,7 +447,7 @@
 
 
 
-      // 자동 번역이 없으면 먼저 자막을 선택해야 함
+      // 자동 번역이 없으면 먼저 자막 선택 필요
 
       if (!autoTranslateExists) {
 
@@ -404,6 +491,8 @@
 
           }
 
+
+
           if (!anyClicked) {
 
             settingsButton.click();
@@ -416,63 +505,19 @@
 
 
 
-        // 자막 선택 후 충분히 대기
+        // 자막 선택 후 새 메뉴가 열릴 때까지 대기
 
-        await delay(800);
+        await delay(600);
 
+        panel = findSettingsPanel();
 
+        while (!panel) {
 
-        // ESC 키로 패널 명시적 닫기
+          await delay(100);
 
-        document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', keyCode: 27, bubbles: true }));
-
-        await delay(500);
-
-
-
-        // 패널이 완전히 닫힐 때까지 대기
-
-        await waitForPanelClose();
-
-        await delay(300);
-
-
-
-        // 다시 설정 메뉴 열기
-
-        settingsButton.click();
-
-        await delay(100);
-
-        hidePanel();
-
-        await delay(200);
-
-
-
-        panel = await waitForPanel();
-
-        hidePanel();
-
-
-
-        // 자막 메뉴 클릭
-
-        const subtitleClicked2 = clickMenuItem(panel, ['자막', 'Subtitles', 'CC', '字幕']);
-
-        if (!subtitleClicked2) {
-
-          showPanel();
-
-          throw new Error('자막 메뉴를 다시 열 수 없습니다');
+          panel = findSettingsPanel();
 
         }
-
-        await delay(300);
-
-        panel = await waitForPanel();
-
-        hidePanel();
 
       }
 
@@ -492,7 +537,7 @@
 
         if (koreanClicked) {
 
-          showPanel();
+          showAllPanels();
 
           showToast('✓ 한국어 자막이 활성화되었습니다');
 
@@ -508,7 +553,7 @@
 
         }
 
-        showPanel();
+        showAllPanels();
 
         settingsButton.click();
 
@@ -518,13 +563,23 @@
 
 
 
-      await delay(300);
+      await delay(400);
 
 
 
       // 5. 한국어 선택
 
-      panel = await waitForPanel();
+      panel = findSettingsPanel();
+
+      while (!panel) {
+
+        await delay(100);
+
+        panel = findSettingsPanel();
+
+      }
+
+      hideAllPanels();
 
       const koreanClicked = clickMenuItem(panel, ['한국어', 'Korean', '韓国語']);
 
@@ -540,7 +595,7 @@
 
 
 
-      showPanel(); // 완료 후 패널 복원 (자동으로 닫힘)
+      showAllPanels(); // 완료 후 패널 복원 (자동으로 닫힘)
 
       showToast('✓ 한국어 자막이 활성화되었습니다');
 
@@ -558,7 +613,7 @@
 
     } catch (error) {
 
-      showPanel(); // 에러 시 패널 복원
+      showAllPanels(); // 에러 시 패널 복원
 
 
 
