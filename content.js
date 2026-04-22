@@ -14,16 +14,16 @@
   var getTargetLanguageNames = i18n.getTargetLanguageNames || function (code) { return [code, code.toUpperCase()]; };
   var getLanguageName = i18n.getLanguageName || function (code) { return code.charAt(0).toUpperCase() + code.slice(1); };
   var isRTL = i18n.isRTL || function () { return false; };
-  var getToastMessageForLanguage = i18n.getToastMessageForLanguage || function () { return ''; };
+  var getToastMessage = i18n.getToastMessage || function () { return ''; };
 
-  var targetLang = 'ko';
-  var targetLangNames = ['Korean', 'KO'];
-  var targetLangName = 'Korean';
+  var targetLang = '';
+  var targetLangNames = [];
+  var targetLangName = '';
 
-  function getButtonSVG(char) {
+  function getButtonSVG() {
     return '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">' +
       '<path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V6h16v12z"/>' +
-      '<text x="12" y="15" text-anchor="middle" font-size="8" font-weight="bold" fill="currentColor" font-family="sans-serif">' + char + '</text>' +
+      '<text x="12" y="15" text-anchor="middle" font-size="8" font-weight="bold" fill="currentColor" font-family="sans-serif">가</text>' +
       '</svg>';
   }
 
@@ -138,7 +138,7 @@
         subtitleButton.click();
       }
       button.classList.remove('active');
-      showToast(getToastMessageForLanguage(targetLang, 'deactivated'));
+      showToast(getToastMessage('deactivated'));
       return;
     }
 
@@ -206,7 +206,7 @@
       if (!autoTranslateClicked) {
         var targetClicked = clickMenuItem(panel, targetLangNames);
         if (targetClicked) {
-          showToast(getToastMessageForLanguage(targetLang, 'activated', { lang: targetLangName, nativeName: targetLangNames[1] }));
+          showToast(getToastMessage('activated', { lang: targetLangName }));
           if (button) {
             button.classList.remove('loading');
             button.classList.add('active');
@@ -230,7 +230,7 @@
         throw new Error(targetLangName + ' not found');
       }
 
-      showToast(getToastMessageForLanguage(targetLang, 'activated', { lang: targetLangName, nativeName: targetLangNames[1] }));
+      showToast(getToastMessage('activated', { lang: targetLangName }));
 
       if (button) {
         button.classList.remove('loading');
@@ -249,7 +249,7 @@
       }
 
       console.error('[Subtitle]', error.message);
-      showToast(getToastMessageForLanguage(targetLang, 'error', { error: error.message }));
+      showToast(getToastMessage('error', { error: error.message }));
 
       if (button) {
         button.classList.remove('loading');
@@ -284,7 +284,7 @@
 
     var tooltipText = targetLangNames[0] + ' subtitles';
 
-    button.innerHTML = getButtonSVG('가') +
+    button.innerHTML = getButtonSVG() +
       '<span class="tooltip">' + tooltipText + '</span>';
     button.setAttribute('aria-label', 'Translate subtitles to ' + targetLangNames[0]);
     button.setAttribute('title', '');

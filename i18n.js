@@ -18,10 +18,7 @@
   var TOAST_MESSAGES = {
     activated: '✓ {lang} subtitles activated',
     deactivated: '✓ Subtitles turned off',
-    error: '⚠ {error}',
-    retry: 'Retrying...',
-    noCaptions: '⚠ No captions available',
-    settingsNotFound: '⚠ Settings button not found'
+    error: '⚠ {error}'
   };
 
   function capitalize(str) {
@@ -34,7 +31,7 @@
   }
 
   function getTargetLanguageNames(langCode) {
-    return [capitalize(langCode), langCode.toUpperCase()];
+    return [capitalize(langCode)];
   }
 
   function getLanguageName(langCode) {
