@@ -58,10 +58,8 @@
       var label = item.querySelector('.ytp-menuitem-label');
       if (label) {
         var labelText = label.textContent.trim();
-        console.log('[DEBUG] Menu label:', labelText, '| Searching for:', texts);
         for (var j = 0; j < texts.length; j++) {
           if (labelText.indexOf(texts[j]) !== -1) {
-            console.log('[DEBUG] MATCH FOUND:', texts[j]);
             item.click();
             clicked = true;
             break;
