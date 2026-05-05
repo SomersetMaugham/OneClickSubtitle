@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "YouTube 자막 변환기",
-  "version": "1.1.0",
-  "description": "시스템 언어에 맞춰 YouTube 자막을 자동으로 타겟 언어로 번역합니다",
+  "name": "YouTube 한글 자막 변환",
+  "version": "1.0.0",
+  "description": "원클릭으로 YouTube 동영상 자막을 한국어로 변환합니다",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
@@ -20,7 +20,6 @@
         "*://*.youtube.com/*"
       ],
       "js": [
-        "i18n.js",
         "content.js"
       ],
       "css": [
