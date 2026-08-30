@@ -1,11 +1,5 @@
 /* YouTube 한글 자막 버튼 스타일 */
 
-/* 메뉴 조작 중 패널 숨기기 */
-.ytp-settings-menu.ytp-korean-subtitle-hidden {
-  opacity: 0 !important;
-  pointer-events: none !important;
-}
-
 .ytp-korean-subtitle-button {
   display: inline-flex;
   align-items: center;
